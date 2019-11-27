@@ -1,2 +1,2 @@
 # SEFK
-Use docker to build suricata +EFK
+Use docker to build suricata +ELK
