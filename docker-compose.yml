@@ -1,0 +1,99 @@
+version: '2'
+
+services:
+
+#  suricata:
+#    build: suricata/alpine/Dockerfile/
+#    container_name: suricata
+#    cap_add:
+#      - NET_ADMIN
+#    network_mode: "host"
+#    volumes:
+#      - /var/log/suricata:/var/log/suricata
+#      - ./suricata/rules/my.rules:/var/lib/suricata/rules/my.rules
+#    entrypoint: /tmp/docker-entrypoint.sh
+
+  suricata:
+    build: suricata
+    container_name: suricata
+    restart: always
+    environment:
+    # For ET Pro ruleset replace "OPEN" with your OINKCODE
+     - OINKCODE=OPEN
+    network_mode: "host"
+    cap_add:
+     - NET_ADMIN
+     - SYS_NICE
+     - NET_RAW
+    image: "dtagdevsec/suricata:1903"
+    volumes:
+      - /var/log/suricata:/var/log/suricata
+      - ./suricata/rules/my.rules:/var/lib/suricata/rules/my.rules
+
+
+  elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:6.3.1
+        container_name: elasticsearch8
+        environment:
+            - cluster.name=docker-cluster
+            - bootstrap.memory_lock=true
+            - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+            - "http.cors.enabled:true"
+            - "http.cors.allow-origin:\"*\""
+        ulimits:
+            memlock:
+                soft: -1
+                hard: -1
+        ports:
+            - 9200:9200
+        networks:
+            - elk
+        restart: always
+
+#  fluentd:
+#    depends_on:
+#      - elasticsearch
+#    image: beeeeemo/fluentd_aggregator:last
+#    build:
+#      context: "$PWD/fluentd_image/."
+#      dockerfile: "$PWD/fluentd_image/Dockerfile"
+#    volumes:
+#      - "/var/log/suricata:/fluentd/log"
+#      - "${PWD}/fluentd/conf:/fluentd/etc"
+#    networks:
+#      - elk
+#    restart: always
+
+  logstash:
+      build:
+        context: logstash/logstash/
+      volumes:
+        - "/var/log/suricata:/var/log/suricata"
+        - "./logstash/logstash/pipeline:/usr/share/logstash/pipeline"
+        - "./template/elasticsearch6-template.json:/etc/logstash/elasticsearch6-template.json"
+      ports:
+        - "5000:5000"
+        - "9600:9600"
+      environment:
+        LS_JAVA_OPTS: "-Xmx1g -Xms1g"
+      networks:
+        - elk
+      depends_on:
+        - elasticsearch
+
+
+  kibana:
+    build:
+      context: kibana/
+    volumes:
+      - ./kibana/config/:/usr/share/kibana/config:ro
+    ports:
+      - "5601:5601"
+    networks:
+      - elk
+    depends_on:
+      - elasticsearch
+
+networks:
+  elk:
+    

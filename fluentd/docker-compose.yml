@@ -1,0 +1,45 @@
+version: '2'
+services:
+    fluentd:
+        depends_on:
+            - elasticsearch9
+        image: beeeeemo/fluentd_aggregator:last
+        build:
+            context: "$PWD/fluentd_image/."
+            dockerfile: "$PWD/fluentd_image/Dockerfile"
+        volumes:
+            - "/var/log/suricata:/fluentd/log"
+            - "${PWD}/conf:/fluentd/etc"
+        networks:
+            - esnet
+        restart: always
+
+    elasticsearch9:
+        image: docker.elastic.co/elasticsearch/elasticsearch:6.3.1
+        container_name: elasticsearch9
+        environment:
+            - cluster.name=docker-cluster
+            - bootstrap.memory_lock=true
+            - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+            - "http.cors.enabled:true"
+            - "http.cors.allow-origin:\"*\""
+        ulimits:
+            memlock:
+                soft: -1
+                hard: -1
+        volumes:
+            - esdata1:/usr/share/elasticsearch/data/
+        ports:
+            - 9200:9200
+        networks:
+            - esnet
+        restart: always
+
+volumes:
+    esdata1:
+        driver: local
+    esdata2:
+        driver: local
+
+networks:
+    esnet:
