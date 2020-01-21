@@ -1,5 +1,5 @@
 # 簡介
-Use docker to build suricata +EFK
+Use docker to build suricata + EFK
 
 # 部署
 ### 進到 suricata/dist/suricata.yaml 修改 suircata 的 yaml 檔
